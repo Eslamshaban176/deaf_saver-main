@@ -1,5 +1,5 @@
 import numpy as np
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
 import librosa
 import tensorflow as tf
 
@@ -70,6 +70,7 @@ def predict_route():
 
     prediction = make_prediction(audio_file)
 
+    # return jsonify({"prediction": prediction})
     return render_template("chat.html", prediction_text=f"{prediction}".title())
 
 # Main function
