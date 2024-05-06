@@ -1,16 +1,9 @@
+import os
 import numpy as np
 from flask import Flask, request, render_template, jsonify
 import librosa
 import tensorflow as tf
-
-from tensorflow.keras.models import load_model
-
-# Load the model from the .keras file
-loaded_model = load_model('model.keras')
-
-# Now you can use the loaded_model for inference or further processing
-# Load the saved model and labelencoder
-from tensorflow.keras.models import load_model # type: ignore
+from werkzeug.utils import secure_filename
 
 # Flask app initialization
 app = Flask(__name__)
@@ -21,39 +14,31 @@ label_to_class = {
     10: 'gun_shot', 11: 'rain', 12: 'siren', 13: 'train', 14: 'water_drops', 15: 'wind'
 }
 
-
 def get_class_name(label):
-    if label in label_to_class:
-        return label_to_class[label]
-    else:
-        return "Label not found"
-    
-    
+    return label_to_class.get(label, "Label not found")
+
 def extract_features_and_predict(filename, loaded_model):
-    # Load audio file
-    audio, sample_rate = librosa.load(filename, res_type='kaiser_fast')
+    try:
+        # Load audio file
+        audio, sample_rate = librosa.load(filename, res_type='kaiser_fast')
 
-    # Extract MFCC features
-    mfccs_features = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=60)
-    mfccs_scaled_features = np.mean(mfccs_features.T, axis=0)
-    mfccs_scaled_features = mfccs_scaled_features.reshape(1, -1)
+        # Extract MFCC features
+        mfccs_features = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=60)
+        mfccs_scaled_features = np.mean(mfccs_features.T, axis=0)
+        mfccs_scaled_features = mfccs_scaled_features.reshape(1, -1)
 
-    # Make predictions
-    predicted_probabilities = loaded_model.predict(mfccs_scaled_features)
-    predicted_label = np.argmax(predicted_probabilities, axis=1)
-    prediction_class = [get_class_name(label) for label in predicted_label]
+        # Make predictions
+        predicted_probabilities = loaded_model.predict(mfccs_scaled_features)
+        predicted_label = np.argmax(predicted_probabilities, axis=1)
+        prediction_class = [get_class_name(label) for label in predicted_label]
 
-    return prediction_class
+        return prediction_class
+    except Exception as e:
+        return str(e)
 
-# Load the saved model
-loaded_model = load_model("model.keras")
-
-# Load the saved model
-# loaded_model = tf.saved_model.load('saved_model')
-
-def make_prediction(filename):
-    prediction = extract_features_and_predict(filename, loaded_model)
-    return prediction
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'mp3', 'wav'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Flask routes
 @app.route("/")
@@ -63,18 +48,31 @@ def home():
 @app.route("/predict_route", methods=["POST"])
 def predict_route():
     if 'audio_file' not in request.files:
-        return "No audio file uploaded", 400
-    audio_file = request.files['audio_file']
-    if not audio_file:
-        audio_file = "audio.mp3"
-
-    prediction = make_prediction(audio_file)
-
-    return jsonify({"prediction": prediction})
+        return jsonify({"error": "No audio file uploaded"}), 400
     
-    #return render_template("chat.html", prediction_text=f"{prediction}".title())
+    audio_file = request.files['audio_file']
+    
+    if audio_file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
 
+    if audio_file and allowed_file(audio_file.filename):
+        filename = secure_filename(audio_file.filename)
+        audio_file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        audio_file.save(audio_file_path)
+
+        prediction = extract_features_and_predict(audio_file_path, loaded_model)
+
+        os.remove(audio_file_path)  # Remove the uploaded file after processing
+
+        if isinstance(prediction, list):
+            return jsonify({"prediction": prediction})
+        else:
+            return jsonify({"error": prediction}), 500
+    else:
+        return jsonify({"error": "Invalid file format. Supported formats: mp3, wav"}), 400
+    
 # Main function
 if __name__ == "__main__":
+    app.config['UPLOAD_FOLDER'] = 'uploads'
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(debug=True)
-    
