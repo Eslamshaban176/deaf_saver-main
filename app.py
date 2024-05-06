@@ -13,7 +13,7 @@ loaded_model = load_model('model.keras')
 from tensorflow.keras.models import load_model # type: ignore
 
 # Flask app initialization
-flask_app = Flask(__name__)
+app = Flask(__name__)
 
 label_to_class = {
     0: 'Knocking_Sound', 1: 'azan', 2: 'car_horn', 3: 'cat', 4: 'church bell', 
@@ -56,11 +56,11 @@ def make_prediction(filename):
     return prediction
 
 # Flask routes
-@flask_app.route("/")
+@app.route("/")
 def home():
     return render_template("chat.html")
 
-@flask_app.route("/predict_route", methods=["POST"])
+@app.route("/predict_route", methods=["POST"])
 def predict_route():
     if 'audio_file' not in request.files:
         return "No audio file uploaded", 400
@@ -70,10 +70,11 @@ def predict_route():
 
     prediction = make_prediction(audio_file)
 
-    # return jsonify({"prediction": prediction})
-    return render_template("chat.html", prediction_text=f"{prediction}".title())
+    return jsonify({"prediction": prediction})
+    
+    #return render_template("chat.html", prediction_text=f"{prediction}".title())
 
 # Main function
 if __name__ == "__main__":
-    flask_app.run(debug=True)
+    app.run(debug=True)
     
