@@ -41,6 +41,9 @@ def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'mp3', 'wav'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# Load the model outside the Flask routes
+loaded_model = load_model('model.keras')
+
 # Flask routes
 @app.route("/")
 def home():
