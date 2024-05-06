@@ -7,8 +7,8 @@ from tensorflow.keras.models import load_model
 app = Flask(__name__)
 
 # Load the Keras model from the specified file path
-model_path ='model.keras'
-loaded_model = load_model(model_path)
+
+loaded_model = load_model("model.keras")
 
 # Mapping of labels to class names
 label_to_class = {
