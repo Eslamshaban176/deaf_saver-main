@@ -7,6 +7,7 @@ from werkzeug.utils import secure_filename
 
 # Flask app initialization
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'uploads'
 
 label_to_class = {
     0: 'Knocking_Sound', 1: 'azan', 2: 'car_horn', 3: 'cat', 4: 'church bell', 
@@ -73,7 +74,6 @@ def predict_route():
     
 # Main function
 if __name__ == "__main__":
-    app.config['UPLOAD_FOLDER'] = 'uploads'
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.debug = True
     app.run(host="0.0.0.0", port=5000)
