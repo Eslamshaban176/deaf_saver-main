@@ -8,7 +8,7 @@ import tensorflow as tf
 # Flask app initialization
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
-load_model = tf.keras.models.load_model('model.h5')
+load_model = tf.keras.models.load_model('model.keras')
 
 label_to_class = {
     0: 'Knocking_Sound', 1: 'azan', 2: 'car_horn', 3: 'cat', 4: 'church bell', 
